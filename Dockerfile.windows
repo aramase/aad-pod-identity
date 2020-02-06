@@ -1,0 +1,28 @@
+#FROM winamd64/golang:1.12.7
+
+#RUN mkdir C:\nmi
+#COPY /bin/nmi-windows-amd64 C:\nmi\.
+
+#COPY /go/src/github.com/Azure/aad-pod-identity/bin/aad-pod-identity/nmi-windows-amd64 .
+#RUN dir
+#RUN ls -lh && ls /go/src/github.com/Azure/aad-pod-identity/bin/aad-pod-identity/
+
+#ENTRYPOINT [".\nmi-windows-amd64"]
+
+
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
+ENV GOLANG_VERSION 1.12.7
+ENV GOLANG_DOWNLOAD_URL "https://golang.org/dl/go$GOLANG_VERSION.windows-amd64.zip"
+
+RUN powershell -Command \
+	$ErrorActionPreference = 'Stop'; \
+	(New-Object System.Net.WebClient).DownloadFile('%GOLANG_DOWNLOAD_URL%', 'go.zip') ; \
+	Expand-Archive go.zip -DestinationPath c:\\ ; \
+	Remove-Item go.zip -Force
+
+RUN setx PATH %PATH%;c:\go\bin
+
+WORKDIR /go/src/github.com/Azure/aad-pod-identity
+COPY . .
+
+ENTRYPOINT .\\bin\\aad-pod-identity\\nmi-windows-amd64.exe

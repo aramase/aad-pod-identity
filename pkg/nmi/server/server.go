@@ -21,7 +21,6 @@ import (
 	aadpodid "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	auth "github.com/Azure/aad-pod-identity/pkg/auth"
 	k8s "github.com/Azure/aad-pod-identity/pkg/k8s"
-	iptables "github.com/Azure/aad-pod-identity/pkg/nmi/iptables"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -96,12 +95,12 @@ loop:
 
 		case <-ticker.C:
 			log.Infof("node(%s) hostip(%s) metadataaddress(%s:%s) nmiport(%s)", s.NodeName, s.HostIP, s.MetadataIP, s.MetadataPort, s.NMIPort)
-			if err := iptables.AddCustomChain(s.MetadataIP, s.MetadataPort, s.HostIP, s.NMIPort); err != nil {
-				log.Fatalf("%s", err)
-			}
-			if err := iptables.LogCustomChain(); err != nil {
-				log.Fatalf("%s", err)
-			}
+			// if err := iptables.AddCustomChain(s.MetadataIP, s.MetadataPort, s.HostIP, s.NMIPort); err != nil {
+			// 	log.Fatalf("%s", err)
+			// }
+			// if err := iptables.LogCustomChain(); err != nil {
+			// 	log.Fatalf("%s", err)
+			// }
 		}
 	}
 }
@@ -372,10 +371,10 @@ func handleTermination() {
 
 	exitCode := 0
 	// clean up iptables
-	if err := iptables.DeleteCustomChain(); err != nil {
-		log.Infof("Error cleaning up during shutdown: %v", err)
-		exitCode = 1
-	}
+	// if err := iptables.DeleteCustomChain(); err != nil {
+	// 	log.Infof("Error cleaning up during shutdown: %v", err)
+	// 	exitCode = 1
+	// }
 
 	// wait for pod to delete
 	log.Info("Handled termination, awaiting pod deletion")
@@ -437,4 +436,17 @@ func listPodIDsWithRetry(ctx context.Context, kubeClient k8s.Client, logger *log
 		logger.Warningf("failed to get assigned ids for pod:%s/%s in ASSIGNED state, retrying attempt: %d", podns, podname, attempt)
 	}
 	return nil, fmt.Errorf("getting assigned identities for pod %s/%s in ASSIGNED state failed after %d attempts. Error: %v", podns, podname, 2*maxAttemptsPerCheck, err)
+}
+
+type azureCNIConfig struct {
+	AdditionalArgs map[string]interface{} `json:"additionalArgs"`
+}
+
+func addProxyPolicyToCNIConfig() error {
+	// read the file
+	bytes, err := ioutil.ReadFile("C:\\k\\azurecni\\netconf\\10-azure.conflist")
+	if err != nil {
+		return err
+	}
+
 }

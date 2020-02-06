@@ -81,6 +81,7 @@ build-demo: clean-demo
 
 bin/%:
 	GOOS=linux GOARCH=amd64 go build $(GO_BUILD_OPTIONS) -o "$(@)" "$(PKG_NAME)"
+	GOOS=windows GOARCH=amd64 go build $(GO_BUILD_OPTIONS) -o "$(@)-windows-amd64.exe" "$(PKG_NAME)"
 
 .PHONY: build-identity-validator
 build-identity-validator: clean-identity-validator
@@ -108,6 +109,10 @@ image-demo:
 .PHONY: image-identity-validator
 image-identity-validator:
 	docker build -t $(REGISTRY)/$(IDENTITY_VALIDATOR_IMAGE) --build-arg IDENTITY_VALIDATOR_VERSION="$(IDENTITY_VALIDATOR_VERSION)" --target=identityvalidator .
+
+.PHONY: image-nmi-windows
+image-nmi-windows:
+	docker build -f Dockerfile.windows -t "aramase/nmi:windows" --build-arg NMI_VERSION="$(NMI_VERSION)" .
 
 .PHONY: image
 image:image-nmi image-mic image-demo image-identity-validator
