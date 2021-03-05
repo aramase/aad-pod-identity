@@ -50,6 +50,7 @@ var (
 	operationMode                      = pflag.String("operation-mode", "standard", "NMI operation mode")
 	allowNetworkPluginKubenet          = pflag.Bool("allow-network-plugin-kubenet", false, "Allow running aad-pod-identity in cluster with kubenet")
 	kubeletConfig                      = pflag.String("kubelet-config", "/etc/default/kubelet", "Path to kubelet default config")
+	hostIP                             = pflag.String("host-ip", "localhost", "host IP address")
 )
 
 func main() {
@@ -114,6 +115,7 @@ func main() {
 	s.KubeClient = client
 	s.MetadataIP = *metadataIP
 	s.MetadataPort = *metadataPort
+	s.HostIP = *hostIP
 	s.NMIPort = *nmiPort
 	s.NodeName = *nodename
 	s.IPTableUpdateTimeIntervalInSeconds = *ipTableUpdateTimeIntervalInSeconds

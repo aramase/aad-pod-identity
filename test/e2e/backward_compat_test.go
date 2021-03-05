@@ -15,10 +15,10 @@ import (
 	"github.com/Azure/aad-pod-identity/test/e2e/framework/helm"
 	"github.com/Azure/aad-pod-identity/test/e2e/framework/identityvalidator"
 	"github.com/Azure/aad-pod-identity/test/e2e/framework/namespace"
-	corev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("When upgrading AAD Pod Identity", func() {

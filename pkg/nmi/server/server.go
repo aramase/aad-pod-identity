@@ -24,7 +24,6 @@ import (
 	"github.com/Azure/aad-pod-identity/pkg/k8s"
 	"github.com/Azure/aad-pod-identity/pkg/metrics"
 	"github.com/Azure/aad-pod-identity/pkg/nmi"
-	"github.com/Azure/aad-pod-identity/pkg/nmi/iptables"
 	"github.com/Azure/aad-pod-identity/pkg/pod"
 )
 
@@ -39,6 +38,7 @@ type Server struct {
 	NMIPort                            string
 	MetadataIP                         string
 	MetadataPort                       string
+	HostIP                             string
 	NodeName                           string
 	IPTableUpdateTimeIntervalInSeconds int
 	MICNamespace                       string
@@ -48,6 +48,14 @@ type Server struct {
 	// TokenClient is client that fetches identities and tokens
 	TokenClient nmi.TokenClient
 	Reporter    *metrics.Reporter
+	Redirector  Redirector
+}
+
+// Redirector is an abstraction used to modify network to redirect
+// IMDS traffic to NMI
+type Redirector interface {
+	AddRedirectRules() error
+	RemoveRedirectRules() error
 }
 
 // NMIResponse is the response returned to caller
@@ -73,17 +81,20 @@ func NewServer(micNamespace string, blockInstanceMetadata bool, metadataHeaderRe
 		appHandlerReporter = reporter
 		auth.InitReporter(reporter)
 	}
+
 	return &Server{
 		MICNamespace:           micNamespace,
 		BlockInstanceMetadata:  blockInstanceMetadata,
 		MetadataHeaderRequired: metadataHeaderRequired,
 		Reporter:               reporter,
+		// TODO handle health checks for redirection
+		Initialized: true,
 	}
 }
 
 // Run runs the specified Server.
 func (s *Server) Run() error {
-	go s.updateIPTableRules()
+	go s.updateNetworkRules()
 
 	mux := http.NewServeMux()
 	mux.Handle("/metadata/identity/oauth2/token", appHandler(s.msiHandler))
@@ -100,46 +111,6 @@ func (s *Server) Run() error {
 		klog.Fatalf("error creating http server: %+v", err)
 	}
 	return nil
-}
-
-func (s *Server) updateIPTableRulesInternal() {
-	klog.V(5).Infof("node(%s) ip(%s) metadata address(%s:%s) nmi port(%s)", s.NodeName, localhost, s.MetadataIP, s.MetadataPort, s.NMIPort)
-
-	if err := iptables.AddCustomChain(s.MetadataIP, s.MetadataPort, localhost, s.NMIPort); err != nil {
-		klog.Fatalf("%s", err)
-	}
-	if err := iptables.LogCustomChain(); err != nil {
-		klog.Fatalf("%s", err)
-	}
-}
-
-// updateIPTableRules ensures the correct iptable rules are set
-// such that metadata requests are received by nmi assigned port
-// NOT originating from HostIP destined to metadata endpoint are
-// routed to NMI endpoint
-func (s *Server) updateIPTableRules() {
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
-
-	ticker := time.NewTicker(time.Second * time.Duration(s.IPTableUpdateTimeIntervalInSeconds))
-	defer ticker.Stop()
-
-	// Run once before the waiting on ticker for the rules to take effect
-	// immediately.
-	s.updateIPTableRulesInternal()
-	s.Initialized = true
-
-loop:
-	for {
-		select {
-		case <-signalChan:
-			handleTermination()
-			break loop
-
-		case <-ticker.C:
-			s.updateIPTableRulesInternal()
-		}
-	}
 }
 
 type appHandler func(http.ResponseWriter, *http.Request) string
@@ -537,19 +508,45 @@ func copyHeader(dst, src http.Header) {
 	}
 }
 
-func handleTermination() {
+func (s *Server) updateNetworkRules() {
+	if runtime.GOOS == "windows" {
+		s.Redirector = NewWindowsRedirector(s.MetadataIP, s.MetadataPort, s.HostIP, s.NMIPort)
+	} else {
+		s.Redirector = NewLinuxRedirector(s.MetadataIP, s.MetadataPort, s.HostIP, s.NMIPort, s.IPTableUpdateTimeIntervalInSeconds)
+	}
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
+
+	ticker := time.NewTicker(time.Second * time.Duration(s.IPTableUpdateTimeIntervalInSeconds))
+	defer ticker.Stop()
+
+	// Run once before the waiting on ticker for the rules to take effect
+	// immediately.
+	s.Redirector.AddRedirectRules()
+	// TODO handle health checks for redirection
+
+loop:
+	for {
+		select {
+		case <-signalChan:
+			s.handleTermination()
+			break loop
+
+		case <-ticker.C:
+			s.Redirector.AddRedirectRules()
+		}
+	}
+}
+
+func (s *Server) handleTermination() {
 	klog.Info("received SIGTERM, shutting down")
 
 	exitCode := 0
-	// clean up iptables
-	if err := iptables.DeleteCustomChain(); err != nil {
+	if err := s.Redirector.RemoveRedirectRules(); err != nil {
 		klog.Errorf("failed to clean up during shutdown, error: %+v", err)
 		exitCode = 1
 	}
-
-	// wait for pod to delete
-	klog.Info("handled termination, awaiting pod deletion")
-	time.Sleep(10 * time.Second)
 
 	klog.Infof("exiting with %v", exitCode)
 	os.Exit(exitCode)
