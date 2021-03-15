@@ -96,6 +96,10 @@ clean:
 build-nmi: clean-nmi
 	CGO_ENABLED=0 PKG_NAME=github.com/Azure/$(PROJECT_NAME)/cmd/$(NMI_BINARY_NAME) $(MAKE) bin/$(PROJECT_NAME)/$(NMI_BINARY_NAME)
 
+.PHONY: build-nmi-windows
+build-nmi-windows:
+	GOOS=windows CGO_ENABLED=0  go build $(GO_BUILD_OPTIONS) -o bin/nmi.exe ./cmd/nmi/
+
 .PHONY: build-mic
 build-mic: clean-mic
 	CGO_ENABLED=0 PKG_NAME=github.com/Azure/$(PROJECT_NAME)/cmd/$(MIC_BINARY_NAME) $(MAKE) bin/$(PROJECT_NAME)/$(MIC_BINARY_NAME)

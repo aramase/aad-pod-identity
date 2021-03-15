@@ -10,7 +10,7 @@ import (
 	"github.com/Azure/aad-pod-identity/pkg/log"
 	"github.com/Azure/aad-pod-identity/pkg/metrics"
 	"github.com/Azure/aad-pod-identity/pkg/nmi"
-	server "github.com/Azure/aad-pod-identity/pkg/nmi/server"
+	"github.com/Azure/aad-pod-identity/pkg/nmi/server"
 	"github.com/Azure/aad-pod-identity/pkg/probes"
 	"github.com/Azure/aad-pod-identity/pkg/utils"
 	"github.com/Azure/aad-pod-identity/version"

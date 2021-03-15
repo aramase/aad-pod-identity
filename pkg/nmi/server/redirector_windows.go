@@ -18,7 +18,7 @@ type WindowsRedirector struct {
 	RedirectPort string
 }
 
-func NewWindowsRedirector(metadataIP, metadatPort, redirectIP, redirectPort string) *WindowsRedirector {
+func NewRedirector(metadataIP, metadatPort, redirectIP, redirectPort string) *WindowsRedirector {
 	return &WindowsRedirector{
 		MetadataIP:   metadataIP,
 		MetadataPort: metadatPort,

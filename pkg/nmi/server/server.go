@@ -509,11 +509,7 @@ func copyHeader(dst, src http.Header) {
 }
 
 func (s *Server) updateNetworkRules() {
-	if runtime.GOOS == "windows" {
-		s.Redirector = NewWindowsRedirector(s.MetadataIP, s.MetadataPort, s.HostIP, s.NMIPort)
-	} else {
-		s.Redirector = NewLinuxRedirector(s.MetadataIP, s.MetadataPort, s.HostIP, s.NMIPort, s.IPTableUpdateTimeIntervalInSeconds)
-	}
+	s.Redirector = NewRedirector(s.MetadataIP, s.MetadataPort, s.HostIP, s.NMIPort)
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)

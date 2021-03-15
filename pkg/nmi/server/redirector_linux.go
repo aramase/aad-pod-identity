@@ -7,20 +7,18 @@ import (
 )
 
 type LinuxRedirector struct {
-	MetadataIP              string
-	MetadataPort            string
-	RedirectIP              string
-	RedirectPort            string
-	UpdateIntervalInSeconds int
+	MetadataIP   string
+	MetadataPort string
+	RedirectIP   string
+	RedirectPort string
 }
 
-func NewLinuxRedirector(metadataIP, metadatPort, redirectIP, redirectPort string, updateIntervalInSeconds int) *LinuxRedirector {
+func NewRedirector(metadataIP, metadatPort, redirectIP, redirectPort string) *LinuxRedirector {
 	return &LinuxRedirector{
-		MetadataIP:              metadataIP,
-		MetadataPort:            metadatPort,
-		RedirectIP:              redirectIP,
-		RedirectPort:            redirectPort,
-		UpdateIntervalInSeconds: updateIntervalInSeconds,
+		MetadataIP:   metadataIP,
+		MetadataPort: metadatPort,
+		RedirectIP:   redirectIP,
+		RedirectPort: redirectPort,
 	}
 }
 
