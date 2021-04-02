@@ -10,7 +10,7 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.7
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
-	github.com/Microsoft/hcnproxy v1.0.1
+	github.com/Microsoft/hcnproxy v1.0.2-0.20210104194639-98a553fdefaa
 	github.com/Microsoft/hcsshim v0.8.15
 	github.com/coreos/go-iptables v0.5.0
 	github.com/fsnotify/fsnotify v1.4.9
@@ -28,4 +28,6 @@ require (
 	k8s.io/klog/v2 v2.6.0
 )
 
-replace github.com/Microsoft/hcnproxy => /Users/anishramasekar/go/src/github.com/microsoft/hcnproxy
+replace (
+	github.com/Microsoft/hcnproxy/pkg => ./pkg/hcnproxy/vendor/github.com/Microsoft/hcnproxy/pkg
+)
